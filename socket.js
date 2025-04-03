@@ -3,6 +3,7 @@ const Note = require('./models/note')
 const User = require('./models/user')
 
 let io
+const activeUsers = {}
 
 const initializeSocket = (server) => {
 
@@ -15,47 +16,34 @@ const initializeSocket = (server) => {
 
     io.on("connection", (socket) => {
         console.log('socket:', socket)
-        console.log("User connected:", socket.id)
+        socket.on('registerUser', (userId) => {
+            activeUsers[userId] = socket.id
+            console.log('Active users:', activeUsers)
+        })
 
-        socket.on("updateNote", async ({ id, note }) => {
+        socket.on("updateNote", async (noteId, changes) => {
             try {
-                const updatedNote = await Note.findByIdAndUpdate(id, note, { new: true })
+                const updatedNote = await Note.findByIdAndUpdate(noteId, changes, { new: true })
                 io.emit("noteUpdated", updatedNote)
             } catch (error) {
                 console.error("Error updating note:", error)
             }
         })
 
-        socket.on('sendNoteToCollaborator', async (noteId, collaboratorId) => {
+        socket.on('noteShared', async (noteId) => {
             try {
-              const note = await Note.findById(noteId);
-              const collaboratorSocketId = io.sockets.sockets.get(collaboratorId); // You need a mapping of userId to socketId
-              if (collaboratorSocketId) {
-                socket.to(collaboratorSocketId).emit('noteShared', note); // Send note to collaborator
-              }
-            } catch (err) {
-              console.error('Error sharing note:', err);
-            }
-          });
-
-
-        socket.on("collaboratorAdded", (updatedNote) => {
-            const { noteId, collaboratorId, noteTitle, userType, collaborators } = updatedNote
-            const note = Note.findById(noteId)
-            if (note) {
-                collaborators.forEach((collaborator) => {
-                    const collaboratorSocketId = io.sockets.sockets.get(collaborator.userId)
+                const note = await Note.findById(noteId).populate('collaborators.userId')
+                note.collaborators.forEach((collaborator) => {
+                    const collaboratorSocketId = activeUsers[collaborator.userId.toString()]
                     if (collaboratorSocketId) {
-                        io.to(collaboratorSocketId).emit("noteSharedNotification", {
-                            noteId: noteId,
-                            collaboratorId: collaboratorId,
-                            noteTitle: noteTitle,
-                            userType: userType,
-                        })
+                        socket.to(collaboratorSocketId).emit('noteShared', note) // Send note to collaborator
                     }
                 })
+            } catch (err) {
+                console.error('Error sharing note:', err)
             }
         })
+
         // handle typing event
         socket.on("typing", ({ userId, noteId }) => {
             socket.broadcast.emit("typing", { userId, noteId })
@@ -84,7 +72,12 @@ const initializeSocket = (server) => {
                 })
         })
         socket.on("disconnect", () => {
-            console.log("User disconnected:", socket.id)
+            for (let userId in activeUsers) {
+                if (activeUsers[userId] === socket.id) {
+                    delete activeUsers[userId]
+                    break
+                }
+            }
         })
     })
 

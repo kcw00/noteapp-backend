@@ -74,7 +74,7 @@ notesRouter.post('/', async (request, response) => {
     content: body.content,
     important: body.important === undefined ? false : body.important,
     creator: creator,
-    collaborators: body.collaborators || [],
+    collaborators: [], // add empty collaborators array
     id: body.id
   })
 
@@ -130,7 +130,6 @@ notesRouter.put('/:noteId', async (request, response) => {
 
 
 // Add collaborator to a note
-
 notesRouter.put('/:noteId/collaborators', async (request, response) => {
   const { noteId } = request.params
   const { collaboratorId, userType } = request.body
@@ -216,11 +215,6 @@ notesRouter.delete('/:noteId/collaborators', async (request, response) => {
   note.collaborators = note.collaborators.filter(c => c.userId && c.userId.toString() !== collaboratorId)
   try {
     const updatedNote = await note.save()
-    // Notify clients about the collaborator removal
-    getIo().emit('collaboratorRemoved', {
-      noteId: note._id.toString(),
-      collaboratorId: collaboratorId
-    })
     response.status(200).json(updatedNote)
   } catch (error) {
     response.status(400).json({ error: 'Failed to remove collaborator' })
