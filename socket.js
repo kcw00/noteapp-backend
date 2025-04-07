@@ -14,14 +14,16 @@ const initializeSocket = (server) => {
         },
     })
 
-    io.on("connection", (socket) => {
+    io.on("connect", (socket) => {
         console.log('socket:', socket)
-        socket.on('registerUser', (userId) => {
+        socket.on('loggedUser', (userId) => {
+            console.log('User logged in:', userId)
             activeUsers[userId] = socket.id
             console.log('Active users:', activeUsers)
+            io.emit('activeUsers', Object.keys(activeUsers))
         })
 
-        socket.on("updateNote", async (noteId, changes) => {
+        socket.on("noteUpdated", async (noteId, changes) => {
             try {
                 const updatedNote = await Note.findByIdAndUpdate(noteId, changes, { new: true })
                 io.emit("noteUpdated", updatedNote)
@@ -30,15 +32,15 @@ const initializeSocket = (server) => {
             }
         })
 
-        socket.on('noteShared', async (noteId) => {
+        socket.on('noteShared', async (userId) => {
             try {
-                const note = await Note.findById(noteId).populate('collaborators.userId')
-                note.collaborators.forEach((collaborator) => {
+                const notes = await Note.findById(userId).populate('collaborators.userId')
+                notes.map(note => note.collaborators.forEach((collaborator) => {
                     const collaboratorSocketId = activeUsers[collaborator.userId.toString()]
                     if (collaboratorSocketId) {
                         socket.to(collaboratorSocketId).emit('noteShared', note) // Send note to collaborator
                     }
-                })
+                }))
             } catch (err) {
                 console.error('Error sharing note:', err)
             }

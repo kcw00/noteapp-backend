@@ -28,7 +28,6 @@ const app = express()
 app.use(cors())
 app.use(express.static('dist'))
 app.use(express.json())
-app.use(middleware.requestLogger)
 
 
 app.use('/api/notes', notesRouter)
@@ -41,6 +40,7 @@ if (process.env.NODE_ENV === 'test') {
   app.use('/api/testing', testingRouter)
 }
 
+app.use(middleware.requestLogger)
 app.use(middleware.unknownEndpoint)
 app.use(middleware.errorHandler)
 
