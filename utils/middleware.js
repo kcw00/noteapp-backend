@@ -59,13 +59,16 @@ const userExtractor = async (request, response, next) => {
       }
 
       const user = await User.findById(decodedToken.id)
+      if (!user) {
+        return response.status(401).json({ error: 'User not found' })
+      }
       request.user = user // Attach user information to the request object
       next()
     } catch (error) {
-      return response.status(401).json({ error: 'Token missing or invalid' })
+      return response.status(401).json({ error: 'Token missing or invalid' + error })
     }
   } else {
-    return response.status(401).json({ error: 'Token missing or invalid' })
+    return response.status(401).json({ error: 'wrong authorization' })
   }
 }
 

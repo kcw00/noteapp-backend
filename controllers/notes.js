@@ -7,6 +7,7 @@ const { getIo } = require('../socket')
 
 notesRouter.use(userExtractor)
 
+
 // get all notes for a user
 notesRouter.get('/:userId', async (request, response) => {
   const { userId } = request.params
@@ -44,8 +45,9 @@ notesRouter.get('/:noteId', async (request, response) => {
 // get shared notes
 notesRouter.get('/shared/:userId', async (request, response) => {
   const { userId } = request.params
+  const userObjectId = new ObjectId(userId)
   try {
-    const user = await User.findById(userId).populate('shared')
+    const user = await User.find({ "_id": userObjectId }).populate('shared')
     const sharedNotes = user.shared
 
     if (!sharedNotes || sharedNotes.length === 0) {
@@ -84,20 +86,36 @@ notesRouter.post('/', async (request, response) => {
   response.status(201).json(savedNote)
 })
 
-notesRouter.delete('/:noteId', async (request, response) => {
-  const { noteId } = request.params
+notesRouter.delete('/:noteId/user/:userId', async (request, response) => {
+  const { noteId, userId } = request.params
+
   const note = await Note.findById(noteId)
   if (!note) {
     return response.status(404).json({ error: 'Note not found' })
   }
 
-  const creator = await User.findById(note.creator)
-  creator.notes = creator.notes.filter(n => n.toString() !== note.id.toString()) // remove note from user
-  await creator.save()
 
-  await Note.findByIdAndDelete(noteId)
-  getIo().emit('noteDeleted', noteId)
-  response.status(204).end()
+  try {
+    // Remove the note from the user's notes
+    const creator = await User.findById(userId)
+    creator.notes = creator.notes.filter(n => n.toString() !== noteId)
+    await creator.save()
+
+    note.collaborators.forEach(async (collaborator) => {
+      const user = await User.findById(collaborator.userId)
+      if (user) {
+        user.shared = user.shared.filter(n => n.toString() !== noteId) // remove note from collaborator's shared notes
+        await user.save()
+      }
+    })
+    // Delete the note from the database
+    await Note.findByIdAndDelete(noteId)
+
+    response.status(204).end() // Successful deletion with no content to return
+  } catch (error) {
+    console.error('Error deleting note:', error)
+    return response.status(500).json({ error: 'Failed to delete note' })
+  }
 })
 
 
@@ -180,7 +198,7 @@ notesRouter.put('/:noteId/collaborators', async (request, response) => {
     const updatedNote = await note.save()
     const updatedCollaborator = await collaborator.save()
 
-    response.status(200).json({updatedNote, updatedCollaborator})
+    response.status(200).json({ updatedNote, updatedCollaborator })
   } catch (error) {
     response.status(400).json({ error: 'Failed to add collaborator' + error })
   }
@@ -210,15 +228,13 @@ notesRouter.delete('/:noteId/collaborators', async (request, response) => {
     return response.status(403).json({ error: 'You do not have permission to remove collaborators' })
   }
 
-  console.log('COLLABORATOR backend: ', note.collaborators)
-
   // Remove the collaborator
   note.collaborators = note.collaborators.filter(c => c.userId && c.userId.toString() !== collaboratorId)
   collaborator.shared = collaborator.shared.filter(n => n.toString() !== noteId) // remove note from collaborator's shared notes
   try {
     const updatedNote = await note.save()
     const updatedCollaborator = await collaborator.save()
-    response.status(200).json({updatedNote, updatedCollaborator})
+    response.status(200).json({ updatedNote, updatedCollaborator })
   } catch (error) {
     response.status(400).json({ error: 'Failed to remove collaborator' })
   }
