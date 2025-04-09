@@ -42,12 +42,11 @@ notesRouter.get('/:noteId', async (request, response) => {
 })
 
 // get shared notes
-notesRouter.get('/shared', async (request, response) => {
+notesRouter.get('/shared/:userId', async (request, response) => {
+  const { userId } = request.params
   try {
-    const userId = request.user._id
-    const sharedNotes = await Note.find({ 
-      collaborators: { $elemMatch: { collaboratorId: userId } } 
-    })
+    const user = await User.findById(userId).populate('shared')
+    const sharedNotes = user.shared
 
     if (!sharedNotes || sharedNotes.length === 0) {
       return []
@@ -81,7 +80,6 @@ notesRouter.post('/', async (request, response) => {
   const savedNote = await note.save()
   creator.notes = creator.notes.concat(savedNote._id) // add note to user
   await creator.save()
-  getIo().emit('noteAdded', savedNote)
 
   response.status(201).json(savedNote)
 })
@@ -177,13 +175,14 @@ notesRouter.put('/:noteId/collaborators', async (request, response) => {
     name: collaborator.name,
     userType
   })
+  collaborator.shared.push(noteId) // add note to collaborator's shared notes
   try {
     const updatedNote = await note.save()
-    // Notify clients about the collaborator addition
-    getIo().emit('collaboratorAdded', { noteId, collaboratorId, userType })
+    const updatedCollaborator = await collaborator.save()
+
     response.status(200).json(updatedNote)
   } catch (error) {
-    response.status(400).json({ error: 'Failed to add collaborator' })
+    response.status(400).json({ error: 'Failed to add collaborator' + error })
   }
 })
 
@@ -191,6 +190,8 @@ notesRouter.put('/:noteId/collaborators', async (request, response) => {
 notesRouter.delete('/:noteId/collaborators', async (request, response) => {
   const { noteId } = request.params
   const { collaboratorId } = request.body
+
+  const collaborator = await User.findById(collaboratorId)
 
   // Check if noteId is valid
   if (!ObjectId.isValid(noteId)) {
@@ -213,8 +214,10 @@ notesRouter.delete('/:noteId/collaborators', async (request, response) => {
 
   // Remove the collaborator
   note.collaborators = note.collaborators.filter(c => c.userId && c.userId.toString() !== collaboratorId)
+  collaborator.shared = collaborator.shared.filter(n => n.toString() !== noteId) // remove note from collaborator's shared notes
   try {
     const updatedNote = await note.save()
+    const updatedCollaborator = await collaborator.save()
     response.status(200).json(updatedNote)
   } catch (error) {
     response.status(400).json({ error: 'Failed to remove collaborator' })
