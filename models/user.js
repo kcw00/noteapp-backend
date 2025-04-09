@@ -14,6 +14,12 @@ const userSchema = new mongoose.Schema({
       ref: 'Note'
     }
   ],
+  shared: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Note'
+    }
+  ]
 })
 
 userSchema.set('toJSON', {
