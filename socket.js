@@ -15,36 +15,62 @@ const initializeSocket = (server) => {
     })
 
     io.on("connect", (socket) => {
-        console.log('socket:', socket)
-        socket.on('loggedUser', (userId) => {
+        socket.on('loggedUser', async (userId) => {
             console.log('User logged in:', userId)
             activeUsers[userId] = socket.id
             console.log('Active users:', activeUsers)
+
+            // Fetch shared notes for the logged-in user
+            try {
+                const user = await User.findById(userId).populate('shared')
+                const sharedNotes = user.shared || []
+                socket.emit('sharedNotesFetched', sharedNotes)
+            } catch (error) {
+                console.error('Error fetching shared notes:', error)
+            }
+
             io.emit('activeUsers', Object.keys(activeUsers))
         })
 
-        socket.on("noteUpdated", async (noteId, changes) => {
+        socket.on("updateNote", async ({ noteId, changes }) => {
             try {
                 const updatedNote = await Note.findByIdAndUpdate(noteId, changes, { new: true })
-                io.emit("noteUpdated", updatedNote)
+                io.to(activeUsers).emit("noteUpdated", updatedNote)
             } catch (error) {
                 console.error("Error updating note:", error)
             }
         })
 
-        socket.on('noteShared', async (userId) => {
+
+        socket.on('collaboratorAdded', async ({ noteId, collaboratorId }) => {
             try {
-                const notes = await Note.findById(userId).populate('collaborators.userId')
-                notes.map(note => note.collaborators.forEach((collaborator) => {
-                    const collaboratorSocketId = activeUsers[collaborator.userId.toString()]
-                    if (collaboratorSocketId) {
-                        socket.to(collaboratorSocketId).emit('noteShared', note) // Send note to collaborator
+                const note = await Note.findById(noteId).populate('collaborators.userId')
+
+                // Add the note to the 'shared' field of each collaborator
+
+                const collaborator = await User.findById(collaboratorId)
+
+                if (collaborator) {
+                    if (!collaborator.shared.includes(noteId)) {
+                        collaborator.shared.push(noteId)
+                        await collaborator.save()
                     }
-                }))
-            } catch (err) {
-                console.error('Error sharing note:', err)
+
+                    const collaboratorSocketId = activeUsers[collaboratorId]
+                    if (collaboratorSocketId) {
+                        io.to(collaboratorSocketId).emit("noteShared", note)
+                        io.to(collaboratorSocketId).emit("collaboratorAdded", {
+                            noteId: note.id,
+                            collaboratorId: collaborator.id,
+                        })
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error sharing note with collaborators:', error)
             }
         })
+
 
         // handle typing event
         socket.on("typing", ({ userId, noteId }) => {
@@ -73,13 +99,14 @@ const initializeSocket = (server) => {
                     console.error("Error fetching user:", error)
                 })
         })
-        socket.on("disconnect", () => {
+        socket.on("logoutUser", ({ userId }) => {
             for (let userId in activeUsers) {
                 if (activeUsers[userId] === socket.id) {
                     delete activeUsers[userId]
                     break
                 }
             }
+            io.emit('activeUsers', Object.keys(activeUsers))
         })
     })
 
