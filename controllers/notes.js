@@ -180,7 +180,7 @@ notesRouter.put('/:noteId/collaborators', async (request, response) => {
     const updatedNote = await note.save()
     const updatedCollaborator = await collaborator.save()
 
-    response.status(200).json(updatedNote)
+    response.status(200).json({updatedNote, updatedCollaborator})
   } catch (error) {
     response.status(400).json({ error: 'Failed to add collaborator' + error })
   }
@@ -218,7 +218,7 @@ notesRouter.delete('/:noteId/collaborators', async (request, response) => {
   try {
     const updatedNote = await note.save()
     const updatedCollaborator = await collaborator.save()
-    response.status(200).json(updatedNote)
+    response.status(200).json({updatedNote, updatedCollaborator})
   } catch (error) {
     response.status(400).json({ error: 'Failed to remove collaborator' })
   }
