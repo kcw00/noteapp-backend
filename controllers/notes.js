@@ -45,9 +45,8 @@ notesRouter.get('/:noteId', async (request, response) => {
 // get shared notes
 notesRouter.get('/shared/:userId', async (request, response) => {
   const { userId } = request.params
-  const userObjectId = new ObjectId(userId)
   try {
-    const user = await User.find({ "_id": userObjectId }).populate('shared')
+    const user = await User.findById(userId).populate('shared')
     const sharedNotes = user.shared
 
     if (!sharedNotes || sharedNotes.length === 0) {
