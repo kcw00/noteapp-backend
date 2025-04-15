@@ -2,42 +2,53 @@ const WebSocket = require('ws')
 global.WebSocket = WebSocket
 
 const Y = require('yjs')
-const { WebsocketServer } = require('y-websocket')
+const { Server } = require('@hocuspocus/server')
 
 const ydocStore = {} // Store Yjs documents for each room (note)
 
-const initializeYSocket = (server) => {
+const initializeYSocket = () => {
     // Create a WebSocket server for Yjs, listen on a separate path
     const wss = new WebSocket.Server({ noServer: true })
 
+    const hocuspocus = Server.configure({
+        port: 3001,
+        address: 'localhost',
+        debounce: 10000,
+        maxDebounce: 45000,
+        unloadImmediately: false,
+        async onListen(data) {
+            console.log('Yjs server is listening on port:', data.port)
+        },
+        async onDisconnect(data) {
+            console.log('Yjs server disconnected:', data)
+        },
+        async onStoreDocument(data) {
+            const { room } = data
+            if (!ydocStore[room]) {
+                ydocStore[room] = new Y.Doc()
+            }
+            data.document = ydocStore[room]
+        },
+        async onLoadDocument(data) {
+            const { room } = data
+            if (ydocStore[room]) {
+                data.document = ydocStore[room]
+            } else {
+                console.log('No document found for room:', room)
+            }
+        },
+    })
+
+
     wss.on('connection', (ws, req) => {
-        const room = req.url.split('/')[2] // Room identifier (e.g., noteId)
-
-        // Create a new Yjs document if one doesn't exist for this room
-        if (!ydocStore[room]) {
-            const ydoc = new Y.Doc()
-            ydocStore[room] = ydoc
-        }
-
-        const ydoc = ydocStore[room]
-        const provider = new WebsocketServer({
-            server: server,
-            ydoc: ydoc,
-            awareness: new Y.Awareness(ydoc)
-        })
-
-        const awareness = provider.awareness
-
-        awareness.on('change', () => {
-            const users = awareness.getStates()
-            console.log('current users:', users)
-        })
-
         
-
+        hocuspocus.handleConnection(ws, req)
+        hocuspocus.listen(() => {
+            console.log('Yjs server is listening:', hocuspocus)
+        })
 
         ws.on('close', () => {
-            provider.destroy() // Clean up when the connection closes
+            hocuspocus.destroy() // Clean up when the connection closes
         })
     })
 

@@ -1,6 +1,7 @@
 const { Server } = require('socket.io')
 const Note = require('./models/note')
 const User = require('./models/user')
+
 let io
 const activeUsers = {}
 
