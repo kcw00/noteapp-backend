@@ -12,6 +12,11 @@
     "start:test": "NODE_ENV=test node index.js"
   },
   "dependencies": {
+    "@apollo/server": "^4.11.3",
+    "@graphql-tools/schema": "^10.0.23",
+    "@hocuspocus/server": "^2.15.2",
+    "@hocuspocus/transformer": "^2.15.2",
+    "@y/websocket-server": "^0.1.1",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -19,10 +24,14 @@
     "express-async-errors": "^3.1.1",
     "graphql": "^16.10.0",
     "graphql-http": "^1.22.4",
+    "graphql-subscriptions": "^3.0.0",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.12.0",
     "mongoose": "^8.9.5",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "ws": "^8.18.1",
+    "y-websocket": "^3.0.0",
+    "yjs": "^13.6.24"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",

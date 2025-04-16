@@ -6,7 +6,7 @@ const { Server } = require('@hocuspocus/server')
 
 const ydocStore = {} // Store Yjs documents for each room (note)
 
-const initializeYSocket = () => {
+const initializeYSocket = (server) => {
     // Create a WebSocket server for Yjs, listen on a separate path
     const wss = new WebSocket.Server({ noServer: true })
 

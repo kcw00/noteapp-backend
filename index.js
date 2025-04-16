@@ -3,47 +3,69 @@ const config = require('./utils/config')
 const logger = require('./utils/logger')
 const http = require('http')
 const { initializeSocket } = require('./socket') // import socket.io setup
-const { initializeYSocket } = require('./ySocket') // import ySocket setup
+const { Server } = require('@hocuspocus/server')
+const { TiptapTransformer } = require('@hocuspocus/transformer')
 
 const server = http.createServer(app)
 
 
-const io = initializeSocket(server) // initialize socket after server creation
-const wss = initializeYSocket(server) // initialize ySocket after server creation
+initializeSocket(server) // initialize socket after server creation
 
+const ydocStore = {}
 
+const hocuspocus = Server.configure({
+  port: 1234,
+  address: 'localhost',
+  debounce: 10000,
+  maxDebounce: 45000,
+  unloadImmediately: false,
+  async onListen(data) {
+    console.log('Yjs server is listening on port:', data.port)
+  },
+  async onDisconnect(data) {
+    console.log('Yjs server disconnected:', data)
+  },
+  async onStoreDocument(data) {
+    const { room } = data
+    if (!ydocStore[room]) {
+      ydocStore[room] = new Y.Doc()
+    }
+    data.document = ydocStore[room]
+  },
+  async onLoadDocument(data) {
+    const { document, documentName } = data
+    const noteId = documentName
 
-// Increase max listeners to avoid MaxListenersExceededWarning
-require('events').EventEmitter.defaultMaxListeners = 20
-
-// Handle WebSocket upgrades for both socket.io and y-websocket
-server.on('upgrade', (req, socket, head) => {
-  console.log(`Upgrade request URL: ${req.url}`)
-
-  // First, check for y-websocket upgrade
-  if (req.url.startsWith('/y-websocket')) {
-    // Handle upgrade request for y-websocket
-    if (!wss) {
-      console.error('WebSocket server not initialized')
-      socket.destroy()
+    if (!document.isEmpty('default')) {
       return
     }
-    wss.handleUpgrade(req, socket, head, (ws) => {
-      wss.emit('connection', ws, req)  // Hand over to y-websocket
-    })
-  }
-  // If not y-websocket, check for socket.io upgrade
-  else if (req.url.startsWith('/socket.io')) {
-    if (!io) {
-      console.error('Socket.io server not initialized')
-      socket.destroy()
-      return
+
+    const note = await Note.findById(noteId)
+
+    if (note.ydoc) {
+      const doc = new Y.Doc()
+      const dbState = new Uint8Array(note.ydoc)
+      Y.applyUpdate(doc, dbState)
+      ydocStore[noteId] = doc
+      return doc
     }
 
-    io.emit('connection', socket, req)  // Hand over to socket.io
+    if (note.content) {
+      const ydoc = TiptapTransformer.toYdoc(
+        note.conetent,
+      )
+      Y.encodeStateAsUpdate(ydoc)
+      return ydoc
+    }
 
-  }
+    return new Y.doc()
+  },
 })
+
+hocuspocus.listen(() => {
+  console.log('Yjs server is listening:', hocuspocus)
+})
+
 server.listen(config.PORT, () => {
   logger.info(`Server running on port ${config.PORT}`)
 })

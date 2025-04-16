@@ -9,6 +9,7 @@ const mongoose = require('mongoose')
 const usersRouter = require('./controllers/users')
 const loginRouter = require('./controllers/login')
 const signupRouter = require('./controllers/signup')
+const collabRouter = require('./controllers/collab')
 
 mongoose.set('strictQuery', false)
 
@@ -34,6 +35,8 @@ app.use('/api/notes', notesRouter)
 app.use('/api/users', usersRouter)
 app.use('/api/login', loginRouter)
 app.use('/api/signup', signupRouter)
+app.use('/api/collab', collabRouter)
+
 
 if (process.env.NODE_ENV === 'test') {
   const testingRouter = require('./controllers/testing')
