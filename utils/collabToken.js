@@ -1,10 +1,10 @@
 const jwt = require('jsonwebtoken')
 
-const generateCollabToken = (userId, noteId, permissons) => {
+const generateCollabToken = (userId, noteId, permissions) => {
     const payload = {
         userId,
         noteId,
-        permissons
+        permissions
     }
 
     const secret = process.env.COLLAB_SECRET
