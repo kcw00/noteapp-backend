@@ -7,14 +7,15 @@ const { Document } = require('@tiptap/extension-document')
 const { Paragraph } = require('@tiptap/extension-paragraph')
 const { Text } = require('@tiptap/extension-text')
 const { Placeholder } = require('@tiptap/extension-placeholder')
+const { Bold } = require('@tiptap/extension-bold')
+const { debounce } = require('debounce')
 
-
-const ydocStore = {}
 
 const hocuspocus = Server.configure({
     port: 1234,
     address: 'localhost',
-    unloadImmediately: false,
+    timeout: 1000,
+    debounce: 200,
     async onListen(data) {
         console.log('Yjs server is listening:', data)
     },
@@ -24,8 +25,9 @@ const hocuspocus = Server.configure({
             return false
         }
         try {
-            const decoded = jwt.decode(token)
-            console.log('Decoded token:', decoded)
+            // const decoded = jwt.decode(token)
+            const decoded = jwt.verify(token, process.env.COLLAB_SECRET)
+            console.log('[onAuthenticate] User:', decoded)
             if (decoded.permissions === 'write') {
                 return true
             } else if (decoded.permissions === 'read') {
@@ -33,12 +35,12 @@ const hocuspocus = Server.configure({
                 return true
             }
         } catch (error) {
-            console.error('Error decoding token:', error)
+            console.error('[onAuthenticate] Invalid token:', error)
             return false
         }
     },
     async onDisconnect(data) {
-        console.log('Yjs server disconnected:', data)
+        console.log(`"${data.context}" has disconnected.`)
     },
     async onLoadDocument(data) {
         const { documentName } = data
@@ -48,39 +50,55 @@ const hocuspocus = Server.configure({
         console.log('note [onLoadDocument]:', note)
 
         const content = note?.content?.default
-        
-        if (!content) {
-            console.log('Content is undefined or null')
-            return new Y.Doc()
-        }
+        console.log('content [onLoadDocument]:', content)
 
 
-        if (content) {
-            const ydoc = TiptapTransformer.toYdoc(
-                content,
-                "default",
-                [Document, Paragraph, Text, Placeholder]
-            )
-            return ydoc
+        const ydoc = TiptapTransformer.toYdoc(
+            content,
+            "default",
+            [Document, Paragraph, Text, Placeholder, Bold]
+        )
+
+
+        return ydoc
+
+    },
+    async onChange(data) {
+        const save = async () => {
+            try {
+                const json = TiptapTransformer.fromYdoc(data.document)
+                console.log('Content [onChange]:', json)
+
+
+                await Note.findByIdAndUpdate(data.documentName, {
+                    content: json,
+                })
+            } catch (error) {
+                console.error('[onChange] Failed to save:', error)
+            }
+        decounced?.clear()
+        const decounced = debounce(save, 1000)
+        decounced()
+
         }
-        return new Y.Doc()
     },
     async onStoreDocument(data) {
+        const ydoc = data.document
+        const noteId = data.documentName
+
+        console.log('[onStoreDocument] saving note', noteId)
 
         try {
-            const ydoc = data.document
-            const noteId = data.documentName
+            const json = TiptapTransformer.fromYdoc(ydoc)
+            console.log('Content [onStoreDocument]:', json)
 
-            const content = TiptapTransformer.fromYdoc(ydoc)
-            console.log('Content [onStoreDocument]:', content)
-
-            if (!content) {
+            if (!json) {
                 console.log('Content is undefined or null')
                 return
             }
 
             await Note.findByIdAndUpdate(noteId, {
-                content: { default: content },
+                content: json,
             })
 
             console.log('[onStoreDocument] Success')
