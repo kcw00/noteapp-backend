@@ -52,8 +52,7 @@ notesRouter.get('/shared/:userId', async (request, response) => {
 
     // empty array for new users
     if (!sharedNotes || sharedNotes.length === 0) {
-      sharedNotes = []
-      return sharedNotes
+      return response.json([])
     }
 
     response.json(sharedNotes)

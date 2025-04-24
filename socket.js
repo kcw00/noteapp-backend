@@ -36,12 +36,13 @@ const initializeSocket = (server) => {
             })
         })
 
-        socket.on('updateNote', async ({ noteId, changes }) => {
+        socket.on('updateNote', async ({ id, changes }) => {
             try {
-                const updatedNote = await Note.findByIdAndDelete(noteId, changes, { new: true })
+                const updatedNote = await Note.findByIdAndUpdate(id, changes, { new: true })
                 if (!updatedNote) {
-                    return console.error('Note not found')
+                    return console.error('error while updating note: Note not found')
                 }
+                io.emit("noteUpdated", updatedNote)
             }
             catch (error) {
                 console.error("Error updating note:", error)

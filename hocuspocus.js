@@ -64,21 +64,30 @@ const hocuspocus = Server.configure({
 
     },
     async onChange(data) {
+        const noteId = data.documentName
         const save = async () => {
             try {
                 const json = TiptapTransformer.fromYdoc(data.document)
                 console.log('Content [onChange]:', json)
 
+                const xml = data.document.getXmlFragment('default').toString()
+                console.log('[onChange] Yjs XML Fragment:', xml)
 
-                await Note.findByIdAndUpdate(data.documentName, {
+                await Note.findByIdAndUpdate(noteId, {
                     content: json,
                 })
             } catch (error) {
                 console.error('[onChange] Failed to save:', error)
             }
-        decounced?.clear()
-        const decounced = debounce(save, 1000)
-        decounced()
+            // decounced?.clear()
+            // const decounced = debounce(save, 1000)
+            // decounced()
+            if (!data.context.deboucedSave) {
+                data.context.deboucedSave = debounce(save, 1000)
+            }
+
+            data.context.deboucedSave()
+            console.log('[onChange] Success')
 
         }
     },
