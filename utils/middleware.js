@@ -65,7 +65,7 @@ const userExtractor = async (request, response, next) => {
       request.user = user // Attach user information to the request object
       next()
     } catch (error) {
-      return response.status(401).json({ error: 'Token missing or invalid' + error })
+      return response.status(401).json({ error: 'Token missing or invalid ' + error })
     }
   } else {
     return response.status(401).json({ error: 'wrong authorization' })
