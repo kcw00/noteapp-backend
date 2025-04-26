@@ -3,21 +3,40 @@ const { TiptapTransformer } = require('@hocuspocus/transformer')
 const Note = require('./models/note')
 const Y = require('yjs')
 const jwt = require('jsonwebtoken')
+const { debounce } = require('debounce')
+const config = require('./utils/config')
+const User = require('./models/user')
+
+// the list of all extensions used in the editor
+// used for the node type checking
 const { Document } = require('@tiptap/extension-document')
 const { Paragraph } = require('@tiptap/extension-paragraph')
 const { Text } = require('@tiptap/extension-text')
 const { Placeholder } = require('@tiptap/extension-placeholder')
 const { Bold } = require('@tiptap/extension-bold')
-const { debounce } = require('debounce')
+const { HardBreak } = require('@tiptap/extension-hard-break')
+const { Heading } = require('@tiptap/extension-heading')
+const { OrderedList } = require('@tiptap/extension-ordered-list')
+const { BulletList } = require('@tiptap/extension-bullet-list')
+const { ListItem } = require('@tiptap/extension-list-item')
+const { CodeBlock } = require('@tiptap/extension-code-block')
+const { Strike } = require('@tiptap/extension-strike')
+// const { Image } = require('@tiptap/extension-image')
+// const { Link } = require('@tiptap/extension-link')
+// const { TextStyle } = require('@tiptap/extension-text-style')
+// const { History } = require('@tiptap/extension-history')
+
 
 
 const hocuspocus = Server.configure({
     port: 1234,
-    address: 'localhost',
+    address: config.ADDRESS,
     timeout: 1000,
     debounce: 200,
     async onListen(data) {
-        console.log('Yjs server is listening:', data)
+        console.log('---------------------------------')
+        console.log(`Yjs server is listening on ${config.ADDRESS}:${data.port}`)
+        console.log('---------------------------------')
     },
     async onAuthenticate(data) {
         const { token } = data
@@ -27,7 +46,9 @@ const hocuspocus = Server.configure({
         try {
             // const decoded = jwt.decode(token)
             const decoded = jwt.verify(token, process.env.COLLAB_SECRET)
-            console.log('[onAuthenticate] User:', decoded)
+            const user = await User.findById(decoded.userId)
+            const userName = user.username
+            console.log('[onAuthenticate] User:', userName)
             if (decoded.permissions === 'write') {
                 return true
             } else if (decoded.permissions === 'read') {
@@ -40,23 +61,24 @@ const hocuspocus = Server.configure({
         }
     },
     async onDisconnect(data) {
-        console.log(`"${data.context}" has disconnected.`)
+        console.log('---------------------------------')
+        console.log(`Yjs server has disconnected.`)
+        console.log('---------------------------------')
     },
     async onLoadDocument(data) {
         const { documentName } = data
         const noteId = documentName
 
         const note = await Note.findById(noteId)
-        console.log('note [onLoadDocument]:', note)
+        console.log('[onLoadDocument] note:', note)
 
         const content = note?.content?.default
-        console.log('content [onLoadDocument]:', content)
-
 
         const ydoc = TiptapTransformer.toYdoc(
             content,
             "default",
-            [Document, Paragraph, Text, Placeholder, Bold]
+            [Document, Paragraph, Text, Placeholder, Bold, HardBreak, Heading,
+                OrderedList, BulletList, ListItem, CodeBlock, Strike],
         )
 
 
@@ -68,7 +90,6 @@ const hocuspocus = Server.configure({
         const save = async () => {
             try {
                 const json = TiptapTransformer.fromYdoc(data.document)
-                console.log('Content [onChange]:', json)
 
                 const xml = data.document.getXmlFragment('default').toString()
                 console.log('[onChange] Yjs XML Fragment:', xml)
@@ -99,7 +120,7 @@ const hocuspocus = Server.configure({
 
         try {
             const json = TiptapTransformer.fromYdoc(ydoc)
-            console.log('Content [onStoreDocument]:', json)
+            console.log('[onStoreDocument] content:', ydoc.getXmlFragment('default').toString())
 
             if (!json) {
                 console.log('Content is undefined or null')
