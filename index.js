@@ -13,7 +13,7 @@ initializeSocket(server) // initialize socket after server creation
 
 
 hocuspocus.listen(() => {
-  console.log('Yjs server is listening:', hocuspocus)
+  console.log(`Yjs server running on port ${config.PORT}`)
 })
 
 
