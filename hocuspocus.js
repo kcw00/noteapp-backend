@@ -66,21 +66,45 @@ const hocuspocus = Server.configure({
         console.log('---------------------------------')
     },
     async onLoadDocument(data) {
-        const { documentName } = data
+        const { documentName, document } = data
         const noteId = documentName
 
         const note = await Note.findById(noteId)
         console.log('[onLoadDocument] note:', note)
 
-        const content = note?.content?.default
+        const content = note?.content
 
         const ydoc = TiptapTransformer.toYdoc(
             content,
-            "default",
+            "content",
             [Document, Paragraph, Text, Placeholder, Bold, HardBreak, Heading,
                 OrderedList, BulletList, ListItem, CodeBlock, Strike],
         )
 
+        const title = note?.title
+
+
+        const titleDoc = {
+            type: 'doc',
+            content: [
+                {
+                    type: 'heading',
+                    attrs: { level: 1 },
+                    ...(title ? { content: [{ type: 'text', text: title }] } : {}),
+                },
+            ],
+        }
+
+        console.log('[onLoadDocument] final titleDoc:', JSON.stringify(titleDoc, null, 2))
+
+        try {
+            const titleYdoc = TiptapTransformer.toYdoc(titleDoc, 'title')
+            const titleUpdate = Y.encodeStateAsUpdate(titleYdoc)
+            Y.applyUpdate(ydoc, titleUpdate)
+            console.log('[onLoadDocument] Injected title:', title)
+        } catch (error) {
+            console.error('[onLoadDocument] Failed to load title:', error)
+        }
 
         return ydoc
 
@@ -91,10 +115,13 @@ const hocuspocus = Server.configure({
             try {
                 const json = TiptapTransformer.fromYdoc(data.document)
 
-                const xml = data.document.getXmlFragment('default').toString()
-                console.log('[onChange] Yjs XML Fragment:', xml)
+                const realContent = data.document.getXmlFragment('content').toString()
+                const realTitle = data.document.getXmlFragment('title').toString()
+                console.log('[onChange] Yjs XML Fragment:', realTitle)
+                console.log('[onChange] Yjs XML Fragment:', realContent)
 
                 await Note.findByIdAndUpdate(noteId, {
+                    title: realTitle,
                     content: json,
                 })
             } catch (error) {
@@ -119,16 +146,23 @@ const hocuspocus = Server.configure({
         console.log('[onStoreDocument] saving note', noteId)
 
         try {
-            const json = TiptapTransformer.fromYdoc(ydoc)
-            console.log('[onStoreDocument] content:', ydoc.getXmlFragment('default').toString())
+            // Convert the content to JSON
+            const contentJson = TiptapTransformer.fromYdoc(ydoc, 'content')
 
-            if (!json) {
+            // Convert the title to text
+            const titleText = ydoc.getXmlFragment('title').toString().replace(/<[^>]+>/g, '').replace(/\n/g, ' ').trim()
+
+            console.log('[onStoreDocument] title:', ydoc.getXmlFragment('title').toString())
+            console.log('[onStoreDocument] content:', ydoc.getXmlFragment('content').toString())
+
+            if (!contentJson) {
                 console.log('Content is undefined or null')
                 return
             }
 
             await Note.findByIdAndUpdate(noteId, {
-                content: json,
+                title: titleText,
+                content: contentJson,
             })
 
             console.log('[onStoreDocument] Success')
