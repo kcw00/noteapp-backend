@@ -3,12 +3,12 @@ const Note = require('../models/note')
 const User = require('../models/user')
 const { userExtractor } = require('../utils/middleware')
 const { ObjectId } = require('mongodb')
-const { getIo } = require('../socket')
+const { getIo } = require('../socket/socket')
 
 notesRouter.use(userExtractor)
 
 
-// get all notes for a user
+// Get all notes for a user
 notesRouter.get('/:userId', async (request, response) => {
   const { userId } = request.params
   console.log('userId:', userId)
@@ -18,7 +18,7 @@ notesRouter.get('/:userId', async (request, response) => {
   response.json(notes)
 })
 
-// get a single note with collaborators
+// Get a single note with collaborators
 notesRouter.get('/:noteId', async (request, response) => {
   const { noteId } = request.params
 
@@ -42,7 +42,7 @@ notesRouter.get('/:noteId', async (request, response) => {
   }
 })
 
-// get shared notes
+// Get shared notes
 notesRouter.get('/shared/:userId', async (request, response) => {
   const { userId } = request.params
   try {
@@ -62,6 +62,7 @@ notesRouter.get('/shared/:userId', async (request, response) => {
   }
 })
 
+// Create a new note
 notesRouter.post('/', async (request, response) => {
   const body = request.body
 
@@ -86,6 +87,7 @@ notesRouter.post('/', async (request, response) => {
   response.status(201).json(savedNote)
 })
 
+// Delete a note
 notesRouter.delete('/:noteId/user/:userId', async (request, response) => {
   const { noteId, userId } = request.params
 
@@ -237,50 +239,6 @@ notesRouter.delete('/:noteId/collaborators', async (request, response) => {
     response.status(200).json({ updatedNote, updatedCollaborator })
   } catch (error) {
     response.status(400).json({ error: 'Failed to remove collaborator' })
-  }
-})
-
-// Update collaborator role
-notesRouter.put('/:noteId/collaborators/:collaboratorId/role', async (request, response) => {
-  const { noteId, collaboratorId } = request.params
-  const { userType } = request.body
-
-  // Check if noteId is valid
-  if (!ObjectId.isValid(noteId)) {
-    return response.status(400).json({ error: 'Invalid noteId' })
-  }
-
-  // Check if the user is the creator of the note
-  const note = await Note.findById(noteId)
-  if (!note) {
-    return response.status(404).json({ error: 'Note not found' })
-  }
-
-  const isCreator = note.creator.toString() === request.user._id.toString()
-  if (!isCreator) {
-    return response.status(403).json({ error: 'You do not have permission to update collaborator roles' })
-  }
-
-  // Check if the userType is valid
-  const validUserTypes = ['editor', 'viewer']
-  if (!validUserTypes.includes(userType)) {
-    return response.status(400).json({ error: 'Invalid userType' })
-  }
-
-  // Update the collaborator role
-  const collaborator = note.collaborators.find(c => c.user && c.user.toString() === collaboratorId)
-  if (!collaborator) {
-    return response.status(404).json({ error: 'Collaborator not found' })
-  }
-
-  collaborator.userType = userType
-  try {
-    const updatedNote = await note.save()
-    // Notify clients about the collaborator role update
-    getIo().emit('collaboratorRoleUpdated', { noteId, collaboratorId, userType })
-    response.status(200).json(updatedNote)
-  } catch (error) {
-    response.status(400).json({ error: 'Failed to update collaborator role' })
   }
 })
 

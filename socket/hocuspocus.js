@@ -1,11 +1,11 @@
 const { Server } = require('@hocuspocus/server')
 const { TiptapTransformer } = require('@hocuspocus/transformer')
-const Note = require('./models/note')
+const Note = require('../models/note')
 const Y = require('yjs')
 const jwt = require('jsonwebtoken')
 const { debounce } = require('debounce')
-const config = require('./utils/config')
-const User = require('./models/user')
+const config = require('../utils/config')
+const User = require('../models/user')
 
 // the list of all extensions used in the editor
 // used for the node type checking
@@ -21,11 +21,6 @@ const { BulletList } = require('@tiptap/extension-bullet-list')
 const { ListItem } = require('@tiptap/extension-list-item')
 const { CodeBlock } = require('@tiptap/extension-code-block')
 const { Strike } = require('@tiptap/extension-strike')
-// const { Image } = require('@tiptap/extension-image')
-// const { Link } = require('@tiptap/extension-link')
-// const { TextStyle } = require('@tiptap/extension-text-style')
-// const { History } = require('@tiptap/extension-history')
-
 
 
 const hocuspocus = Server.configure({

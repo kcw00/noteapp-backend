@@ -1,7 +1,7 @@
 const { Server } = require('socket.io')
-const Note = require('./models/note')
-const User = require('./models/user')
-const config = require('./utils/config')
+const Note = require('../models/note')
+const User = require('../models/user')
+const config = require('../utils/config')
 
 let io
 const activeUsers = {}
@@ -86,6 +86,7 @@ const initializeSocket = (server) => {
 
 
         socket.on('addCollaborator', async ({ noteId, collaboratorId }) => {
+            console.log('Adding collaborator:', collaboratorId)
             try {
                 const note = await Note.findById(noteId).populate('collaborators.userId')
 

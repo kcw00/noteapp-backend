@@ -1,14 +1,17 @@
-const config = require('./utils/config')
+const mongoose = require('mongoose')
 const express = require('express')
 const cors = require('cors')
-const notesRouter = require('./controllers/notes')
+
+const config = require('./utils/config')
 const middleware = require('./utils/middleware')
 const logger = require('./utils/logger')
-const mongoose = require('mongoose')
+
+const notesRouter = require('./controllers/notes')
 const usersRouter = require('./controllers/users')
 const loginRouter = require('./controllers/login')
 const signupRouter = require('./controllers/signup')
 const collabRouter = require('./controllers/collab')
+
 
 mongoose.set('strictQuery', false)
 

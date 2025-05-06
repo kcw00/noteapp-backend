@@ -2,8 +2,8 @@ const app = require('./app')
 const config = require('./utils/config')
 const logger = require('./utils/logger')
 const http = require('http')
-const { initializeSocket } = require('./socket') // import socket.io setup
-const { hocuspocus } = require('./hocuspocus') // import hocuspocus setup
+const { initializeSocket } = require('./socket/socket') // import socket.io setup
+const { hocuspocus } = require('./socket/hocuspocus') // import hocuspocus setup
 
 const server = http.createServer(app)
 
