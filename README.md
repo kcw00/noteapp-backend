@@ -126,7 +126,7 @@ This backend uses `notifyUsers(userIds, event, payload)` to emit events to speci
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/kcw00/noteapp-backend.git
+git clone https://github.com/your-username/noteapp-backend.git
 cd noteapp-backend
 ```
 
