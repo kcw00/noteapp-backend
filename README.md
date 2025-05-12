@@ -126,8 +126,8 @@ This backend uses `notifyUsers(userIds, event, payload)` to emit events to speci
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/your-username/realtime-notes-app.git
-cd realtime-notes-app
+git clone https://github.com/kcw00/noteapp-backend.git
+cd noteapp-backend
 ```
 
 ### 2. Install dependencies
