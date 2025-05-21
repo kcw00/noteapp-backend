@@ -61,6 +61,14 @@ const initializeSocket = (server) => {
             }
             io.emit('activeUsers', Object.keys(activeUsers))
         })
+
+        socket.on("disconnect", () => {
+            if (socket.userId && activeUsers[socket.userId] === socket.id) {
+                delete activeUsers[socket.userId]
+            }
+            io.emit("activeUsers", Object.keys(activeUsers))
+        })
+
     })
 
     return io
