@@ -1,6 +1,6 @@
 # 📝 NoteApp Backend – Real-Time Collaboration API
 
-This is the backend for the [Real-Time Collaborative Notes App](https://github.com/kcw00/Noteapp), built with **Node.js**, **Express**, **MongoDB**, **Hocuspocus** and **Socket.IO**. It supports real-time multi-user editing, role-based collaboration, and note-sharing logic.
+This is the backend for the [Real-Time Collaborative Notes App](https://github.com/kcw00/Noteapp), built with **Node.js**, **Express**, **MongoDB**, **Hocuspocus** and **Socket.IO** / hosted on **DigitalOcean**. It supports real-time multi-user editing, role-based collaboration, and note-sharing logic.
 
 ---
 
@@ -12,6 +12,7 @@ This is the backend for the [Real-Time Collaborative Notes App](https://github.c
 - 👥 **Collaboration management** (add/remove collaborators)
 - 💬 **WebSocket events** broadcast to specific users
 - 🧠 **TipTap + Hocuspocus integration** for collaborative text editing
+- 🌐 Backend hosted on **DigitalOcean**
 
 ---
 
