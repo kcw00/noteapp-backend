@@ -34,7 +34,7 @@ describe('when there are some notes saved initially', () => {
     const response = await api.get('/api/notes')
 
     const contents = response.body.map(r => r.content)
-    assert(contents.includes('HTML is easy'))
+    assert(contents.includes('hello'))
   })
 
   describe('viewing a specific note', () => {
@@ -71,7 +71,8 @@ describe('when there are some notes saved initially', () => {
   describe('addition of a new note', () => {
     test('a valid note can be added ', async () => {
       const newNote = {
-        content: 'async/await simplifies making async calls',
+        title: 'first test note',
+        content: 'first test note content',
         important: true,
       }
 
@@ -85,7 +86,7 @@ describe('when there are some notes saved initially', () => {
       assert.strictEqual(notesAtEnd.length, helper.initialNotes.length + 1)
 
       const contents = notesAtEnd.map(n => n.content)
-      assert(contents.includes('async/await simplifies making async calls'))
+      assert(contents.includes('first test note content'))
     })
 
     test('falis with status code 400 if data invalid', async () => {
