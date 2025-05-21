@@ -28,7 +28,10 @@ mongoose.connect(config.MONGODB_URI)
 const app = express()
 
 
-app.use(cors())
+app.use(cors({
+  origin: ['http://localhost:5173', 'https://note-app-woad-five.vercel.app'],
+  credentials: true
+}))
 app.use(express.static('dist'))
 app.use(express.json())
 
