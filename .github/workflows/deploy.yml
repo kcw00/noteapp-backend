@@ -1,0 +1,28 @@
+name: 🚀 Deploy Backend to DigitalOcean
+
+on:
+  push:
+    branches:
+      - main  # or change to your deployment branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v3
+
+      - name: 🔐 Setup SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.DROPLET_SSH_KEY }}
+
+      - name: 🚀 Deploy to Ubuntu Server
+        run: |
+          ssh -o StrictHostKeyChecking=no root@143.198.147.166 << 'EOF'
+            cd /root/noteapp-backend
+            git pull origin main
+            npm install
+            pm2 restart note-api
+          EOF
