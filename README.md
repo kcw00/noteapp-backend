@@ -3,6 +3,42 @@
 This is the backend for the [Real-Time Collaborative Notes App](https://github.com/kcw00/Noteapp), built with **Node.js**, **Express**, **MongoDB**, **Hocuspocus** and **Socket.IO** / hosted on **DigitalOcean**. It supports real-time multi-user editing, role-based collaboration, and note-sharing logic.
 
 ---
+## 🛠️ Setup Instructions
+
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/your-username/noteapp-backend.git
+cd noteapp-backend
+```
+
+### 2. Install dependencies
+
+```bash
+cd backend
+npm install
+```
+
+### 3. Set up environment variables
+
+Create `.env` file in root directory
+
+`backend/.env`
+```bash
+PORT=your-port
+SERVER_ADDRESS=your-backend-address
+MONGODB_URI=mongodb+srv://your-db-uri
+SECRET=your_jwt_secret
+COLLAB_SECRET=your_collab_secret  # this is for tiptap token
+```
+
+### 4. Start servers
+
+```bash
+cd backend && npm run dev
+```
+---
+
 
 ## 📦 Features
 
@@ -120,40 +156,4 @@ This backend uses `notifyUsers(userIds, event, payload)` to emit events to speci
 | `noteDeleted`         | `{ id }`                                       | Notify all collaborators that a note was deleted           |
 | `activeUsers`         | `[ { id, username, ... } ]`                    | Broadcasted to all users when connections change           |
 
----
-
-## 🛠️ Setup Instructions
-
-### 1. Clone the repo
-
-```bash
-git clone https://github.com/your-username/noteapp-backend.git
-cd noteapp-backend
-```
-
-### 2. Install dependencies
-
-```bash
-cd backend
-npm install
-```
-
-### 3. Set up environment variables
-
-Create `.env` file in root directory
-
-`backend/.env`
-```bash
-PORT=your-port
-SERVER_ADDRESS=your-backend-address
-MONGODB_URI=mongodb+srv://your-db-uri
-SECRET=your_jwt_secret
-COLLAB_SECRET=your_collab_secret  # this is for tiptap token
-```
-
-### 4. Start servers
-
-```bash
-cd backend && npm run dev
-```
 ---
