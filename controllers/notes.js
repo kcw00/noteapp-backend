@@ -212,7 +212,7 @@ notesRouter.put('/:noteId/collaborators', async (request, response) => {
 
     // Send socket.io message to all collaborators
     // This will help in real-time note updates to all collaborators
-    const userIdsToNotify = [collaboratorId, ...note.collaborators.map(c => c.userId.toString())]
+    const userIdsToNotify = [collaboratorId, note.creator.toString(), ...note.collaborators.map(c => c.userId.toString())]
     console.log('[socket.io] User IDs to notify:', userIdsToNotify)
     notifyUsers(userIdsToNotify, 'collaboratorAdded', { noteId, collaborator: collaboratorSchema })
     console.log('[socket.io] Collaborator added:', { noteId, collaborator })
