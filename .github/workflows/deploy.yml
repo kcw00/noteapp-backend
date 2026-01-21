@@ -18,12 +18,13 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.DROPLET_SSH_KEY }}
 
-      - name: 🚀 Deploy to Ubuntu Server
+      - name: 🚀 Deploy to DigitalOcean Droplet
         run: |
-          ssh -o StrictHostKeyChecking=no root@143.198.147.166 << 'EOF'
+          ssh -o StrictHostKeyChecking=no root@${{ secrets.DROPLET_IP }} << 'EOF'
             cd /root/noteapp-backend
             git pull origin main
-            npm install
+            npm install --production
             pm2 restart note-api || pm2 start pm2.config.js
             pm2 save
+            echo "✅ Deployment completed successfully"
           EOF
