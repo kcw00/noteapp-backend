@@ -30,7 +30,11 @@ const app = express()
 
 app.use(cors({
   origin: ['http://localhost:5173', 'https://note-app-woad-five.vercel.app'],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }))
 app.use(express.static('dist'))
 app.use(express.json())
